@@ -8,43 +8,61 @@ class TachometerPainter extends CustomPainter {
 
   TachometerPainter({required this.value});
 
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height * 0.8);
-    final radius = size.width * 0.8;
+@override
+void paint(Canvas canvas, Size size) {
+  final center = Offset(size.width / 2, size.height);
+  final radius = size.width * 0.45;
+
+  // --- 1. Fondo del arco ---
+  final bgPaint = Paint()
+    ..color = DashboardColors.ghostBlue
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 10;
+  canvas.drawArc(Rect.fromCircle(center: center, radius: radius), pi, pi, false, bgPaint);
+
+  // --- 2. Graduaciones (Ticks) ---
+  final tickPaint = Paint()
+    ..color = Colors.white.withOpacity(0.5)
+    ..strokeWidth = 2;
+
+  for (int i = 0; i <= 10; i++) {
+    // Calculamos el ángulo para cada marca (de 180 a 360 grados)
+    double angle = pi + (i * pi / 10);
     
-    // 1. Dibujar el fondo del arco (el rastro vacío)
-    final backgroundPaint = Paint()
-      ..color = DashboardColors.ghostBlue
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 15
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      pi,      // Empieza en 180 grados (izquierda)
-      pi,      // Recorre 180 grados (media luna)
-      false,
-      backgroundPaint,
+    // Punto inicial (cerca del borde exterior)
+    Offset start = Offset(
+      center.dx + (radius - 5) * cos(angle),
+      center.dy + (radius - 5) * sin(angle),
     );
+    // Punto final (hacia adentro)
+    Offset end = Offset(
+      center.dx + (radius - 15) * cos(angle),
+      center.dy + (radius - 15) * sin(angle),
+    );
+    canvas.drawLine(start, end, tickPaint);
+  }
 
-    // 2. Dibujar el progreso (el valor real)
+  // --- 3. Progreso Neón ---
+  if (value > 0) {
     final progressPaint = Paint()
       ..color = DashboardColors.neonBlue
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 18
+      ..strokeWidth = 14
       ..strokeCap = StrokeCap.round
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3); // Efecto Neón
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12); // Brillo neón
 
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
       pi,
-      pi * value, // El ángulo depende del valor del robot
+      pi * value,
       false,
       progressPaint,
     );
   }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+@override
+  bool shouldRepaint(covariant TachometerPainter oldDelegate) {
+    // Solo repinta si el valor cambia para ahorrar batería
+    return oldDelegate.value != value;
+  }
 }

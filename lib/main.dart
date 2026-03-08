@@ -43,48 +43,87 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  double _currentValue = 0.5; // Valor de prueba para el arco
+  double _currentValue = 0.5;
 
-  @override
+ @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: DashboardColors.darkBackground,
       body: Stack(
         children: [
-          // Fondo o decoraciones adicionales
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Nuestro CustomPainter
-                CustomPaint(
-                  size: const Size(400, 200),
-                  painter: TachometerPainter(value: _currentValue),
+          // Layout Principal
+          Column(
+            children: [
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    double availableWidth = constraints.maxWidth;
+                    double gaugeSize = availableWidth * 0.75; // Reducimos un pelo para dar aire
+
+                    return Center(
+                      child: SizedBox(
+                        width: gaugeSize,
+                        height: gaugeSize * 0.5,
+                        child: Stack(
+                          alignment: Alignment.bottomCenter,
+                          children: [
+                            Positioned.fill(
+                              child: CustomPaint(
+                                painter: TachometerPainter(value: _currentValue),
+                              ),
+                            ),
+                            Positioned(
+                              bottom: 5, 
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    "${(_currentValue * 100).toInt()}",
+                                    style: TextStyle(
+                                      color: DashboardColors.neonBlue,
+                                      fontSize: gaugeSize * 0.25, // Un poco más grande
+                                      fontWeight: FontWeight.w900, // Más grueso
+                                      letterSpacing: -2, // Números más juntos, estilo moderno
+                                      shadows: [
+                                        Shadow(blurRadius: 25, color: DashboardColors.neonBlue),
+                                      ],
+                                    ),
+                                  ),
+                                  Text(
+                                    "POWER %",
+                                    style: TextStyle(
+                                      color: DashboardColors.neonBlue.withOpacity(0.8),
+                                      letterSpacing: 4,
+                                      fontSize: gaugeSize * 0.04,
+                                      fontWeight: FontWeight.w300,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
-                const SizedBox(height: 20),
-                Text(
-                  "${(_currentValue * 100).toInt()} %",
-                  style: const TextStyle(
-                    color: DashboardColors.neonBlue,
-                    fontSize: 40,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Courier', // Estilo digital
-                  ),
-                ),
-              ],
-            ),
+              ),
+              // Este SizedBox empuja todo hacia arriba para que el slider respire abajo
+              const SizedBox(height: 100), 
+            ],
           ),
-          // Slider temporal en la parte inferior para probar la animación
+    
+          // 3. Slider de control (En la parte inferior)
           Align(
             alignment: Alignment.bottomCenter,
             child: Padding(
-              padding: const EdgeInsets.all(20.0),
+              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
               child: Slider(
                 activeColor: DashboardColors.neonBlue,
+                inactiveColor: DashboardColors.ghostBlue,
                 value: _currentValue,
                 onChanged: (val) {
-                  setState(() {
-                    _currentValue = val;
-                  });
+                  setState(() => _currentValue = val);
                 },
               ),
             ),
