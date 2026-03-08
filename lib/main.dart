@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:ackerman_app/core/constants.dart';
 import 'package:ackerman_app/ui/widgets/tachometer_painter.dart';
 import 'package:ackerman_app/ui/widgets/segmented_gauge.dart';
+import 'package:ackerman_app/ui/widgets/accel_slider.dart';
+import 'package:ackerman_app/ui/widgets/steering_slider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,90 +40,100 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  double _currentValue = 0.5;
+  double _currentValue = 0.0; // Empezamos en 0 para el efecto "muelle"
   double _batteryLevel = 0.8;
+  double _steeringValue = 0.5;
 
   @override
   Widget build(BuildContext context) {
-    // Obtenemos el tamaño de la pantalla para cálculos precisos
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
       backgroundColor: DashboardColors.darkBackground,
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween, // Distribuye arriba, centro y abajo
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // 1. EL ARCO (Tacómetro)
-            SizedBox(
-              width: size.width * 0.5,
-              height: size.width * 0.25,
-              child: Stack(
-                alignment: Alignment.bottomCenter,
-                children: [
-                  Positioned.fill(
-                    child: CustomPaint(
-                      painter: TachometerPainter(value: _currentValue),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 10,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          "${(_currentValue * 100).toInt()}",
-                          style: TextStyle(
-                            color: DashboardColors.neonBlue,
-                            fontSize: size.width * 0.08,
-                            fontWeight: FontWeight.w900,
-                            shadows: [
-                              Shadow(blurRadius: 25, color: DashboardColors.neonBlue),
-                            ],
-                          ),
+      body: Stack(
+        children: [
+          // 1. CAPA CENTRAL: ARCO Y BATERÍA
+          Align(
+            alignment: Alignment.center,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // EL ARCO
+                SizedBox(
+                  width: size.width * 0.45,
+                  height: size.width * 0.22,
+                  child: Stack(
+                    alignment: Alignment.bottomCenter,
+                    children: [
+                      Positioned.fill(
+                        child: CustomPaint(
+                          painter: TachometerPainter(value: _currentValue),
                         ),
-                        Text(
-                          "POWER %",
-                          style: TextStyle(
-                            color: DashboardColors.neonBlue,
-                            letterSpacing: 4,
-                            fontSize: size.width * 0.015,
-                          ),
+                      ),
+                      Positioned(
+                        bottom: 10,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              "${(_currentValue * 100).toInt()}",
+                              style: TextStyle(
+                                color: DashboardColors.neonBlue,
+                                fontSize: size.width * 0.07,
+                                fontWeight: FontWeight.w900,
+                                shadows: [
+                                  Shadow(blurRadius: 25, color: DashboardColors.neonBlue),
+                                ],
+                              ),
+                            ),
+                            Text(
+                              "POWER %",
+                              style: TextStyle(
+                                color: DashboardColors.neonBlue,
+                                letterSpacing: 4,
+                                fontSize: size.width * 0.012,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 20),
+                // LA BATERÍA
+                SizedBox(
+                  width: 250,
+                  child: SegmentedGauge(value: _batteryLevel),
+                ),
+                // Espacio inferior para equilibrar
+                const SizedBox(height: 40),
+              ],
             ),
+          ),
 
-            
-            // 2. BATERÍA (Estilo Honda)
-            Center( // Primer nivel de centrado
-              child: SizedBox(
-                width: 250, // Coincide con el width que definimos en el widget
-                child: SegmentedGauge(value: _batteryLevel),
-              ),
+          // 2. CONTROL IZQUIERDO: ACELERACIÓN (Vertical c/ Retorno)
+          Positioned(
+            left: 50,
+            bottom: size.height * 0.15,
+            child: AccelSlider(
+              onChanged: (val) {
+                setState(() => _currentValue = val);
+              },
             ),
+          ),
 
-            // 3. SLIDER (Control)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 100),
-              child: Slider(
-                activeColor: DashboardColors.neonBlue,
-                inactiveColor: DashboardColors.ghostBlue,
-                value: _currentValue,
-                onChanged: (val) {
-                  setState(() => _currentValue = val);
-                },
-              ),
+          // CONTROL DERECHO: DIRECCIÓN (Con efecto muelle)
+          Positioned(
+            right: 50,
+            bottom: size.height * 0.2,
+            child: SteeringSlider(
+              onChanged: (val) {
+                setState(() => _steeringValue = val);
+              },
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
