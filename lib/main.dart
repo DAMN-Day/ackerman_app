@@ -1,22 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // <--- Importante para la orientación y el sistema
+import 'package:flutter/services.dart';
 import 'package:ackerman_app/core/constants.dart';
 import 'package:ackerman_app/ui/widgets/tachometer_painter.dart';
 import 'package:ackerman_app/ui/widgets/segmented_gauge.dart';
 
 void main() async {
-  // Asegura que los bindings de Flutter estén listos antes de configurar el sistema
   WidgetsFlutterBinding.ensureInitialized();
-
-  // 1. Forzar Orientación Horizontal (Landscape)
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.landscapeLeft,
     DeviceOrientation.landscapeRight,
   ]);
-
-  // 2. Ocultar barras de sistema para modo "Full Screen" (Opcional pero recomendado)
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-
   runApp(const MiRobotApp());
 }
 
@@ -46,91 +40,77 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   double _currentValue = 0.5;
   double _batteryLevel = 0.8;
-  
- @override
+
+  @override
   Widget build(BuildContext context) {
+    // Obtenemos el tamaño de la pantalla para cálculos precisos
+    final size = MediaQuery.of(context).size;
+
     return Scaffold(
       backgroundColor: DashboardColors.darkBackground,
-      body: Stack(
-        children: [
-          // Layout Principal
-          Column(
-            children: [
-              Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    double availableWidth = constraints.maxWidth;
-                    double gaugeSize = availableWidth * 0.65; // Reducimos un poco para dar espacio al Row
-
-                    return Row( // <--- Cambiamos de Column a Row para poner elementos laterales
-                      mainAxisAlignment: MainAxisAlignment.center,
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween, // Distribuye arriba, centro y abajo
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // 1. EL ARCO (Tacómetro)
+            SizedBox(
+              width: size.width * 0.5,
+              height: size.width * 0.25,
+              child: Stack(
+                alignment: Alignment.bottomCenter,
+                children: [
+                  Positioned.fill(
+                    child: CustomPaint(
+                      painter: TachometerPainter(value: _currentValue),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 10,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        // 1. Nuevo: Medidor de Batería a la izquierda
-                        Padding(
-                          padding: const EdgeInsets.only(right: 30), // Espacio entre medidores
-                          child: SegmentedGauge(
-                            value: _batteryLevel, // Usamos el nuevo valor
-                            label: "BATT",
-                            icon: Icons.battery_charging_full_rounded, // Icono de batería
-                          ),
-                        ),
-                        
-                        // 2. Tu arco actual (encapsulado en el SizedBox de siempre)
-                        SizedBox(
-                          width: gaugeSize,
-                          height: gaugeSize * 0.5,
-                          child: Stack(
-                            alignment: Alignment.bottomCenter,
-                            children: [
-                              Positioned.fill(
-                                child: CustomPaint(
-                                  painter: TachometerPainter(value: _currentValue),
-                                ),
-                              ),
-                              Positioned(
-                                bottom: 5, 
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      "${(_currentValue * 100).toInt()}",
-                                      style: TextStyle(
-                                        color: DashboardColors.neonBlue,
-                                        fontSize: gaugeSize * 0.25,
-                                        fontWeight: FontWeight.w900,
-                                        letterSpacing: -2,
-                                        shadows: [
-                                          Shadow(blurRadius: 25, color: DashboardColors.neonBlue),
-                                        ],
-                                      ),
-                                    ),
-                                    Text(
-                                      "POWER %",
-                                      style: TextStyle(
-                                        color: DashboardColors.neonBlue.withOpacity(0.8),
-                                        letterSpacing: 4,
-                                        fontSize: gaugeSize * 0.04,
-                                        fontWeight: FontWeight.w300,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                        Text(
+                          "${(_currentValue * 100).toInt()}",
+                          style: TextStyle(
+                            color: DashboardColors.neonBlue,
+                            fontSize: size.width * 0.08,
+                            fontWeight: FontWeight.w900,
+                            shadows: [
+                              Shadow(blurRadius: 25, color: DashboardColors.neonBlue),
                             ],
                           ),
                         ),
+                        Text(
+                          "POWER %",
+                          style: TextStyle(
+                            color: DashboardColors.neonBlue,
+                            letterSpacing: 4,
+                            fontSize: size.width * 0.015,
+                          ),
+                        ),
                       ],
-                    );
-                  },
-                ),
+                    ),
+                  ),
+                ],
               ),
-            ]
-          ),
-          // 3. Slider de control (En la parte inferior)
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+            ),
+
+            
+            // 2. BATERÍA (Estilo Honda)
+            Center( // Primer nivel de centrado
+              child: SizedBox(
+                width: 250, // Coincide con el width que definimos en el widget
+                child: SegmentedGauge(value: _batteryLevel),
+              ),
+            ),
+
+            // 3. SLIDER (Control)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 100),
               child: Slider(
                 activeColor: DashboardColors.neonBlue,
                 inactiveColor: DashboardColors.ghostBlue,
@@ -140,8 +120,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 },
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
