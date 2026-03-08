@@ -49,7 +49,7 @@ void paint(Canvas canvas, Size size) {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 14
       ..strokeCap = StrokeCap.round
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12); // Brillo neón
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 15); // Brillo neón
 
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // <--- Importante para la orientación y el sistema
 import 'package:ackerman_app/core/constants.dart';
 import 'package:ackerman_app/ui/widgets/tachometer_painter.dart';
+import 'package:ackerman_app/ui/widgets/segmented_gauge.dart';
 
 void main() async {
   // Asegura que los bindings de Flutter estén listos antes de configurar el sistema
@@ -44,7 +45,8 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   double _currentValue = 0.5;
-
+  double _batteryLevel = 0.8;
+  
  @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -58,61 +60,72 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     double availableWidth = constraints.maxWidth;
-                    double gaugeSize = availableWidth * 0.75; // Reducimos un pelo para dar aire
+                    double gaugeSize = availableWidth * 0.65; // Reducimos un poco para dar espacio al Row
 
-                    return Center(
-                      child: SizedBox(
-                        width: gaugeSize,
-                        height: gaugeSize * 0.5,
-                        child: Stack(
-                          alignment: Alignment.bottomCenter,
-                          children: [
-                            Positioned.fill(
-                              child: CustomPaint(
-                                painter: TachometerPainter(value: _currentValue),
-                              ),
-                            ),
-                            Positioned(
-                              bottom: 5, 
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    "${(_currentValue * 100).toInt()}",
-                                    style: TextStyle(
-                                      color: DashboardColors.neonBlue,
-                                      fontSize: gaugeSize * 0.25, // Un poco más grande
-                                      fontWeight: FontWeight.w900, // Más grueso
-                                      letterSpacing: -2, // Números más juntos, estilo moderno
-                                      shadows: [
-                                        Shadow(blurRadius: 25, color: DashboardColors.neonBlue),
-                                      ],
-                                    ),
-                                  ),
-                                  Text(
-                                    "POWER %",
-                                    style: TextStyle(
-                                      color: DashboardColors.neonBlue.withOpacity(0.8),
-                                      letterSpacing: 4,
-                                      fontSize: gaugeSize * 0.04,
-                                      fontWeight: FontWeight.w300,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                    return Row( // <--- Cambiamos de Column a Row para poner elementos laterales
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // 1. Nuevo: Medidor de Batería a la izquierda
+                        Padding(
+                          padding: const EdgeInsets.only(right: 30), // Espacio entre medidores
+                          child: SegmentedGauge(
+                            value: _batteryLevel, // Usamos el nuevo valor
+                            label: "BATT",
+                            icon: Icons.battery_charging_full_rounded, // Icono de batería
+                          ),
                         ),
-                      ),
+                        
+                        // 2. Tu arco actual (encapsulado en el SizedBox de siempre)
+                        SizedBox(
+                          width: gaugeSize,
+                          height: gaugeSize * 0.5,
+                          child: Stack(
+                            alignment: Alignment.bottomCenter,
+                            children: [
+                              Positioned.fill(
+                                child: CustomPaint(
+                                  painter: TachometerPainter(value: _currentValue),
+                                ),
+                              ),
+                              Positioned(
+                                bottom: 5, 
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      "${(_currentValue * 100).toInt()}",
+                                      style: TextStyle(
+                                        color: DashboardColors.neonBlue,
+                                        fontSize: gaugeSize * 0.25,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: -2,
+                                        shadows: [
+                                          Shadow(blurRadius: 25, color: DashboardColors.neonBlue),
+                                        ],
+                                      ),
+                                    ),
+                                    Text(
+                                      "POWER %",
+                                      style: TextStyle(
+                                        color: DashboardColors.neonBlue.withOpacity(0.8),
+                                        letterSpacing: 4,
+                                        fontSize: gaugeSize * 0.04,
+                                        fontWeight: FontWeight.w300,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     );
                   },
                 ),
               ),
-              // Este SizedBox empuja todo hacia arriba para que el slider respire abajo
-              const SizedBox(height: 100), 
-            ],
+            ]
           ),
-    
           // 3. Slider de control (En la parte inferior)
           Align(
             alignment: Alignment.bottomCenter,
