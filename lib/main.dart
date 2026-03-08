@@ -6,6 +6,10 @@ import 'package:ackerman_app/ui/widgets/segmented_gauge.dart';
 import 'package:ackerman_app/ui/widgets/accel_slider.dart';
 import 'package:ackerman_app/ui/widgets/steering_slider.dart';
 import 'package:ackerman_app/ui/widgets/connect_button.dart';
+import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'dart:convert';
+import 'dart:typed_data';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -46,16 +50,63 @@ class _DashboardScreenState extends State<DashboardScreen> {
   double _steeringValue = 0.5;
   ConnectionStatus _connectionStatus = ConnectionStatus.disconnected;
 
+  BluetoothConnection? connection;
+  bool isConnecting = false;
+
   void _handleConnect() async {
+    await [
+      Permission.bluetoothConnect,
+      Permission.bluetoothScan,
+      Permission.location,
+    ].request();
     if (_connectionStatus == ConnectionStatus.disconnected) {
       setState(() => _connectionStatus = ConnectionStatus.connecting);
-      
-      // Simulamos una espera de búsqueda de 2 segundos
-      await Future.delayed(const Duration(seconds: 2));
-      
-      setState(() => _connectionStatus = ConnectionStatus.connected);
+
+      try {
+        // 1. Obtener dispositivos emparejados
+        List<BluetoothDevice> bondedDevices = await FlutterBluetoothSerial.instance.getBondedDevices();
+        
+        // 2. Buscar tu ESP32 (Asegúrate de que el nombre coincida con tu código de Arduino)
+        BluetoothDevice? server = bondedDevices.firstWhere(
+          (device) => device.name == "ESP32_Robot", // <--- CAMBIA ESTO al nombre de tu ESP32
+        );
+
+        // 3. Intentar conectar
+        BluetoothConnection.toAddress(server.address).then((_connection) {
+          print('Conectado al robot!');
+          connection = _connection;
+          setState(() => _connectionStatus = ConnectionStatus.connected);
+
+          // Escuchar datos que envíe el ESP32 (opcional)
+          connection!.input!.listen((Uint8List data) {
+            print('Data recibida: ${ascii.decode(data)}');
+          });
+
+        }).catchError((error) {
+          print('Error de conexión: $error');
+          setState(() => _connectionStatus = ConnectionStatus.disconnected);
+        });
+
+      } catch (e) {
+        print("No se encontró el dispositivo emparejado");
+        setState(() => _connectionStatus = ConnectionStatus.disconnected);
+      }
     } else {
+      // Desconectar
+      await connection?.close();
       setState(() => _connectionStatus = ConnectionStatus.disconnected);
+    }
+  }
+
+  void _sendData(double velocity, double direction) {
+    if (connection != null && connection!.isConnected) {
+      // Mapeamos los valores a rangos que el ESP32 entienda (0-255 para velocidad, 0-100 para dirección)
+      int v = (velocity * 255).toInt();
+      int d = (direction * 100).toInt();
+
+      // Formato de cadena: "V:100,D:50\n"
+      String data = "<$v,$d>\n";
+      connection!.output.add(Uint8List.fromList(utf8.encode(data)));
     }
   }
 
@@ -134,6 +185,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: AccelSlider(
               onChanged: (val) {
                 setState(() => _currentValue = val);
+                _sendData(_currentValue, _steeringValue); // Enviar datos actualizados
               },
             ),
           ),
@@ -145,6 +197,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: SteeringSlider(
               onChanged: (val) {
                 setState(() => _steeringValue = val);
+                _sendData(_currentValue, _steeringValue); // Enviar datos actualizados
               },
             ),
           ),
