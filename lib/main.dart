@@ -5,6 +5,7 @@ import 'package:ackerman_app/ui/widgets/tachometer_painter.dart';
 import 'package:ackerman_app/ui/widgets/segmented_gauge.dart';
 import 'package:ackerman_app/ui/widgets/accel_slider.dart';
 import 'package:ackerman_app/ui/widgets/steering_slider.dart';
+import 'package:ackerman_app/ui/widgets/connect_button.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,6 +44,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
   double _currentValue = 0.0; // Empezamos en 0 para el efecto "muelle"
   double _batteryLevel = 0.8;
   double _steeringValue = 0.5;
+  ConnectionStatus _connectionStatus = ConnectionStatus.disconnected;
+
+  void _handleConnect() async {
+    if (_connectionStatus == ConnectionStatus.disconnected) {
+      setState(() => _connectionStatus = ConnectionStatus.connecting);
+      
+      // Simulamos una espera de búsqueda de 2 segundos
+      await Future.delayed(const Duration(seconds: 2));
+      
+      setState(() => _connectionStatus = ConnectionStatus.connected);
+    } else {
+      setState(() => _connectionStatus = ConnectionStatus.disconnected);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -131,6 +146,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
               onChanged: (val) {
                 setState(() => _steeringValue = val);
               },
+            ),
+          ),
+          Positioned(
+            top: 30,
+            right: 30,
+            child: NeonConnectButton(
+              status: _connectionStatus,
+              onTap: _handleConnect,
             ),
           ),
         ],
