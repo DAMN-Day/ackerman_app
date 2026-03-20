@@ -46,7 +46,7 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   double _currentValue = 0.0; // Empezamos en 0 para el efecto "muelle"
-  double _batteryLevel = 0.8;
+  double _batteryLevel = 0.9;
   double _steeringValue = 0.5;
   ConnectionStatus _connectionStatus = ConnectionStatus.disconnected;
 
@@ -100,16 +100,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   void _sendData(double velocity, double direction) {
     if (connection != null && connection!.isConnected) {
-      // Mapeamos los valores a rangos que el ESP32 entienda (0-255 para velocidad, 0-100 para dirección)
-      int v = (velocity * 255).toInt();
+      // Mapeo de velocidad: 
+      // -1.0 (Reversa Max) -> 0
+      //  0.0 (Stop)         -> 127
+      //  1.0 (Adelante Max) -> 255
+      int v = ((velocity + 1.0) * 127.5).toInt();
+      
+      // Dirección sigue igual (0-100)
       int d = (direction * 100).toInt();
 
-      // Formato de cadena: "V:100,D:50\n"
-      String data = "<$v,$d>\n";
+      String data = "<$v,$d>\n"; 
       connection!.output.add(Uint8List.fromList(utf8.encode(data)));
     }
-  }
-
+}
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
